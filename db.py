@@ -4,11 +4,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-_db_context: dict = {"path": None}
+# PostgreSQL connection pools, keyed by DSN
+_pg_pools: dict = {}
 
 
-def set_db(path: str):
-    _db_context["path"] = path
+def _get_pg_pool(dsn: str):
+    import psycopg2.pool
+    if dsn not in _pg_pools:
+        _pg_pools[dsn] = psycopg2.pool.ThreadedConnectionPool(1, 5, dsn)
+    return _pg_pools[dsn]
 
 
 def _is_pg(path: str) -> bool:
@@ -18,19 +22,18 @@ def _is_mysql(path: str) -> bool:
     return bool(path and path.startswith("mysql://"))
 
 
-def run_query(sql: str):
+def run_query(sql: str, db_path: str):
     """
-    Run a SELECT query against the active database (SQLite, PostgreSQL, or MySQL).
+    Run a SELECT query against the given database (SQLite, PostgreSQL, or MySQL).
     Returns (DataFrame, None) on success, (None, error_message) on failure.
     """
-    path = _db_context["path"]
-    if not path:
+    if not db_path:
         return None, "No database connected. Select a database first."
-    if _is_pg(path):
-        return _run_pg_query(sql, path)
-    if _is_mysql(path):
-        return _run_mysql_query(sql, path)
-    return _run_sqlite_query(sql, path)
+    if _is_pg(db_path):
+        return _run_pg_query(sql, db_path)
+    if _is_mysql(db_path):
+        return _run_mysql_query(sql, db_path)
+    return _run_sqlite_query(sql, db_path)
 
 
 def _run_sqlite_query(sql: str, path: str):
@@ -76,18 +79,22 @@ def _run_mysql_query(sql: str, dsn: str):
 
 
 def _run_pg_query(sql: str, dsn: str):
+    import psycopg2.extras
+    pool = _get_pg_pool(dsn)
+    conn = pool.getconn()
     try:
-        import psycopg2
-        import psycopg2.extras
-        conn = psycopg2.connect(dsn)
-        try:
-            cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-            cursor.execute(sql)
-            rows = cursor.fetchall()
-            if not rows:
-                return pd.DataFrame(), None
-            return pd.DataFrame([dict(r) for r in rows]), None
-        finally:
-            conn.close()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+        conn.rollback()  # reset transaction state before returning to pool
+        if not rows:
+            return pd.DataFrame(), None
+        return pd.DataFrame([dict(r) for r in rows]), None
     except Exception as e:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
         return None, str(e)
+    finally:
+        pool.putconn(conn)

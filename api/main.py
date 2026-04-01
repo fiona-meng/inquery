@@ -22,11 +22,14 @@ from agent import (
     interpret as _interpret,
     self_correct as _self_correct,
 )
-from db import set_db
 from schema_loader import load_schema, build_schema_graph
+from sample_db import create_sample_db, SAMPLE_DB_PATH
 from utils import format_sql
 
 app = FastAPI(title="Text2SQL Agent API")
+
+# Generate sample DB on startup if it doesn't exist
+create_sample_db()
 
 app.add_middleware(
     CORSMiddleware,
@@ -79,13 +82,17 @@ def get_databases():
     return {"databases": _scan_databases()}
 
 
+@app.get("/api/sample-db")
+def get_sample_db():
+    return {"path": str(SAMPLE_DB_PATH), "name": "Sample E-Commerce"}
+
+
 class ConnectRequest(BaseModel):
     db_path: str
 
 @app.post("/api/connect")
 def connect(req: ConnectRequest):
     try:
-        set_db(req.db_path)
         if req.db_path not in _schema_cache:
             _schema_cache[req.db_path] = load_schema(req.db_path)
             # Only build dot graph for SQLite
@@ -113,9 +120,8 @@ class AskRequest(BaseModel):
 @app.post("/api/ask")
 def ask(req: AskRequest):
     try:
-        set_db(req.db_path)
         schema = _schema_cache.get(req.db_path) or load_schema(req.db_path)
-        result = graph.invoke(initial_state(question=req.question, schema=schema))
+        result = graph.invoke(initial_state(question=req.question, schema=schema, db_path=req.db_path))
         return {
             "sql":          result.get("sql"),
             "df_json":      result.get("df_json"),
@@ -135,9 +141,8 @@ class ExecuteRequest(BaseModel):
 @app.post("/api/execute")
 def execute(req: ExecuteRequest):
     try:
-        set_db(req.db_path)
         schema    = _schema_cache.get(req.db_path, "")
-        new_state = initial_state(question=req.question, schema=schema)
+        new_state = initial_state(question=req.question, schema=schema, db_path=req.db_path)
         new_state["is_data_query"] = True
         new_state["sql"]           = req.sql
         result = graph.invoke(new_state)
@@ -256,12 +261,11 @@ class GenerateSQLBody(BaseModel):
 @app.post("/api/generate-sql")
 def generate_sql_endpoint(body: GenerateSQLBody):
     try:
-        set_db(body.db_path)
         if body.db_path not in _schema_cache:
             _schema_cache[body.db_path] = load_schema(body.db_path)
         schema = _schema_cache[body.db_path]
 
-        state = initial_state(question=body.question, schema=schema)
+        state = initial_state(question=body.question, schema=schema, db_path=body.db_path)
         state["is_data_query"] = True
         state.update(_schema_filter(state))
         state.update(_gen_sql(state))
@@ -287,10 +291,9 @@ class RunQueryBody(BaseModel):
 @app.post("/api/run-query")
 def run_query_endpoint(body: RunQueryBody):
     try:
-        set_db(body.db_path)
         schema = _schema_cache.get(body.db_path, "")
 
-        state = initial_state(question=body.question, schema=schema)
+        state = initial_state(question=body.question, schema=schema, db_path=body.db_path)
         state["sql"] = body.sql
         state["is_data_query"] = True
 

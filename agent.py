@@ -32,6 +32,7 @@ class State(TypedDict):
     retry_count:   int
     chart_config:  Optional[dict]
     answer:        Optional[str]
+    db_path:         Optional[str]   # Active database DSN or file path
     db_id:           Optional[str]   # BIRD db identifier, or None
     schema:          Optional[str]   # Full schema string (loaded once per DB)
     filtered_schema: Optional[str]   # Schema pruned to relevant tables for this question
@@ -142,7 +143,7 @@ def verify_columns(state: State) -> dict:
 
 def execute_sql(state: State) -> dict:
     try:
-        df, err = run_query(state["sql"])
+        df, err = run_query(state["sql"], state.get("db_path") or "")
         if err:
             return {"exec_error": err}
         if df.empty:
@@ -277,6 +278,7 @@ graph = _builder.compile()
 def initial_state(
     question: str,
     schema: Optional[str] = None,
+    db_path: Optional[str] = None,
     db_id: Optional[str] = None,
     evidence: Optional[str] = None,
 ) -> dict:
@@ -290,6 +292,7 @@ def initial_state(
         "retry_count":     0,
         "chart_config":    None,
         "answer":          None,
+        "db_path":         db_path,
         "db_id":           db_id,
         "schema":          schema,
         "filtered_schema": None,
