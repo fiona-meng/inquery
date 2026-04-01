@@ -31,7 +31,6 @@ body{font-family:'Inter',sans-serif;background:#F9FDF2;font-size:14px;color:#1a1
 .sidebar-expand{display:none;border:none;background:transparent;cursor:pointer;align-items:center;justify-content:center;color:#1a1a1a;flex-shrink:0;padding:4px;transition:color 0.15s}
 .sidebar-expand:hover{color:#A2DD2C}
 .sidebar.collapsed .sidebar-expand{display:flex}
-
 .nav-items{display:flex;flex-direction:column;gap:2px;padding:0 8px}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;border-radius:8px;color:#444;font-weight:600;font-size:14px;transition:all 0.15s;user-select:none;white-space:nowrap}
 .nav-item:hover{background:rgba(162,221,44,0.12)}
@@ -1139,18 +1138,18 @@ async function submitQuery() {
   // Hide empty state
   document.getElementById('chat-empty').style.display = 'none';
 
+  // Build conversation history from last 3 turns BEFORE adding the new one
+  const history = S.chatTurns
+    .filter(t => t.sql)
+    .slice(-3)
+    .map(t => ({question: t.question, sql: t.sql, answer: t.answer}));
+
   // Create turn
   const turnId = Date.now();
   const turn = {id: turnId, question, sql: null, rows: null, answer: null, execTime: null, page: 1, sqlEditing: false, loading: true};
   S.chatTurns.push(turn);
 
   appendChatTurn(turn);
-
-  // Build conversation history from last 3 completed turns
-  const history = S.chatTurns
-    .filter(t => t.sql && t.answer)
-    .slice(-3)
-    .map(t => ({question: t.question, sql: t.sql, answer: t.answer}));
 
   // Step 1: generate SQL
   try {
