@@ -1,0 +1,1647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inquery</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><rect width='48' height='48' rx='12' fill='%23A2DD2C'/><text x='7' y='36' font-family='Inter,sans-serif' font-size='28' font-weight='800' fill='%231a4a1a' letter-spacing='-1'>iq</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#F9FDF2;font-size:14px;color:#1a1a1a}
+.app{display:flex;height:100vh;overflow:hidden}
+
+/* ── Sidebar ── */
+.sidebar{width:220px;min-width:220px;border-right:1px solid #ddeab8;display:flex;flex-direction:column;background:#F9FDF2;transition:width 0.2s ease,min-width 0.2s ease;overflow:hidden;position:relative}
+.sidebar.collapsed{width:56px;min-width:56px}
+
+.sidebar-header{display:flex;align-items:center;justify-content:space-between;padding:18px 14px 14px;min-height:64px}
+.sidebar.collapsed .sidebar-header{padding:16px 0 12px;justify-content:center}
+
+.logo-full{display:block;flex-shrink:0}
+.logo-icon{display:none;flex-shrink:0}
+.sidebar.collapsed .logo-full{display:none!important}
+.sidebar.collapsed .logo-icon{display:none!important}
+
+.sidebar-toggle{width:28px;height:28px;border:1px solid #ddeab8;border-radius:6px;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#888;transition:all 0.15s;flex-shrink:0}
+.sidebar-toggle:hover{border-color:#A2DD2C;color:#3B6D11;background:#f5fde8}
+.sidebar.collapsed .sidebar-toggle{display:none}
+/* Expand arrow shown in collapsed state */
+.sidebar-expand{display:none;border:none;background:transparent;cursor:pointer;align-items:center;justify-content:center;color:#1a1a1a;flex-shrink:0;padding:4px;transition:color 0.15s}
+.sidebar-expand:hover{color:#A2DD2C}
+.sidebar.collapsed .sidebar-expand{display:flex}
+
+.nav-items{display:flex;flex-direction:column;gap:2px;padding:0 8px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;border-radius:8px;color:#444;font-weight:600;font-size:14px;transition:all 0.15s;user-select:none;white-space:nowrap}
+.nav-item:hover{background:rgba(162,221,44,0.12)}
+.nav-item.active{background:#8AEAB4B3;color:#1a4a1a}
+.nav-icon{width:16px;height:16px;flex-shrink:0}
+.nav-icon svg{width:16px;height:16px;display:block}
+.nav-label{display:block}
+/* Collapsed nav styles */
+.sidebar.collapsed .nav-items{padding:0;gap:0}
+.sidebar.collapsed .nav-label{display:none}
+.sidebar.collapsed .nav-item{justify-content:center;padding:14px 0;gap:0;border-radius:0;background:transparent!important;color:#1a1a1a}
+.sidebar.collapsed .nav-item:hover{color:#A2DD2C}
+.sidebar.collapsed .nav-icon{width:20px;height:20px}
+.sidebar.collapsed .nav-icon svg{width:20px;height:20px}
+
+/* ── Recent section ── */
+.recent-section{margin-top:16px;padding:0 8px;overflow:hidden}
+.sidebar.collapsed .recent-section{display:none}
+.recent-label{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#bbb;padding:0 12px 6px}
+.recent-item{padding:7px 12px;font-size:12px;color:#666;cursor:pointer;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:all 0.12s}
+.recent-item:hover{background:rgba(162,221,44,0.10);color:#1a1a1a}
+
+/* ── Sidebar footer ── */
+.sidebar-footer{margin-top:auto;padding:16px 20px;border-top:1px solid #ddeab8;font-size:12px;color:#999;white-space:nowrap;overflow:hidden}
+.sidebar.collapsed .sidebar-footer{display:none}
+.sidebar-footer span{color:#A2DD2C;font-weight:600}
+
+/* ── Collapsed expand button (bottom of collapsed sidebar) ── */
+.sidebar-expand-btn{display:none;margin:auto 0 16px;justify-content:center}
+.sidebar.collapsed .sidebar-expand-btn{display:flex}
+.sidebar-expand-btn button{width:32px;height:32px;border:1px solid #ddeab8;border-radius:6px;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#888;transition:all 0.15s}
+.sidebar-expand-btn button:hover{border-color:#A2DD2C;color:#3B6D11;background:#f5fde8}
+
+/* ── Main ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{padding:18px 28px 14px;border-bottom:1px solid #ddeab8;background:#F9FDF2}
+.topbar h1{font-size:20px;font-weight:700;color:#1a1a1a}
+.topbar p{font-size:13px;color:#999;margin-top:3px}
+.page{flex:1;overflow-y:auto;padding:24px 28px;display:none;flex-direction:column;gap:20px}
+.page.active{display:flex}
+
+/* ── Cards ── */
+.card{background:#fff;border:1px solid #ddeab8;border-radius:12px;overflow:hidden}
+.card-header{padding:16px 20px;border-bottom:1px solid #f0f5e0;display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:15px;font-weight:600;color:#1a1a1a;display:flex;align-items:center;gap:8px}
+.card-body{padding:20px}
+
+/* ── DB type buttons ── */
+.db-types{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:6px}
+.db-type-btn{border:1px solid #ddeab8;border-radius:10px;padding:16px 12px;background:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transition:all 0.15s;color:#555;font-family:'Inter',sans-serif}
+.db-type-btn:hover{border-color:#A2DD2C;background:#f5fde8}
+.db-type-btn.active{border-color:#A2DD2C;background:#f0fcd6;color:#3B6D11}
+.db-type-btn svg{width:28px;height:28px}
+.db-type-label{font-size:12px;font-weight:600}
+
+/* ── Form ── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-grid.full{grid-template-columns:1fr}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:12px;font-weight:600;color:#555}
+input[type=text],input[type=password],input[type=number],select,textarea{width:100%;padding:9px 12px;border:1px solid #ddeab8;border-radius:8px;background:#fafff5;color:#1a1a1a;font-size:13px;font-family:'Inter',sans-serif;outline:none;transition:border-color 0.15s}
+input:focus,select:focus,textarea:focus{border-color:#A2DD2C;box-shadow:0 0 0 3px rgba(162,221,44,0.12);background:#fff}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+.btn-row{display:flex;justify-content:flex-end;gap:10px;margin-top:6px}
+.btn-primary{padding:9px 20px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background 0.15s}
+.btn-primary:hover{background:#333}
+.btn-primary.green{background:#A2DD2C;color:#1a4a1a}
+.btn-primary.green:hover{background:#8ec920}
+.btn-primary:disabled{opacity:0.6;cursor:not-allowed}
+.btn-ghost{padding:9px 16px;background:transparent;color:#555;border:1px solid #ddeab8;border-radius:8px;font-size:13px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;transition:all 0.15s}
+.btn-ghost:hover{border-color:#A2DD2C;color:#3B6D11;background:#f5fde8}
+.btn-ghost:disabled{opacity:0.6;cursor:not-allowed}
+
+/* ── Connections ── */
+.saved-connections{display:flex;flex-direction:column;gap:8px}
+.conn-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#fafff5;border:1px solid #ddeab8;border-radius:8px}
+.conn-info{display:flex;flex-direction:column;gap:2px}
+.conn-name{font-weight:600;font-size:13px}
+.conn-meta{font-size:12px;color:#999}
+.conn-actions{display:flex;gap:6px}
+.conn-btn{padding:5px 12px;border:1px solid #ddeab8;border-radius:6px;background:#fff;font-size:12px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;transition:all 0.15s;color:#555}
+.conn-btn.active-conn{background:#A2DD2C;border-color:#A2DD2C;color:#1a4a1a}
+.conn-btn:hover{border-color:#A2DD2C}
+
+/* ── Chat layout ── */
+#page-query{padding:0!important;overflow:hidden!important;flex-direction:column}
+.chat-layout{display:flex;flex-direction:column;height:100%;overflow:hidden}
+.chat-messages{flex:1;overflow-y:auto;padding:24px 28px;display:flex;flex-direction:column;gap:24px}
+.chat-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#bbb;gap:10px;font-size:14px}
+.chat-empty svg{opacity:0.3}
+
+/* Chat question bubble */
+.chat-question-bubble{align-self:flex-end;max-width:70%;background:#f0f5e0;border-radius:16px 16px 4px 16px;padding:12px 16px;font-size:14px;color:#1a1a1a;line-height:1.5;font-weight:500}
+
+/* SQL block (light green) */
+.chat-sql-wrapper{display:flex;flex-direction:column;gap:0;border:1px solid #c8dfa0;border-radius:12px;overflow:hidden;background:#f5f9ed}
+.chat-sql-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#eaf2d0;border-bottom:1px solid #c8dfa0}
+.chat-sql-title{font-size:12px;font-weight:700;color:#3B6D11;letter-spacing:0.03em}
+.chat-sql-actions{display:flex;gap:6px}
+.chat-sql-body{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.7;color:#2d5a00;white-space:pre-wrap;word-break:break-all;background:#f5f9ed}
+.chat-sql-body:focus{outline:1px solid #A2DD2C}
+.sql-kw{color:#2d7a3a;font-weight:600}.sql-col{color:#1a5a8a}.sql-str{color:#a05a00}.sql-fn{color:#4a7a20}.sql-num{color:#5a6800}
+
+/* Results card */
+.chat-results-wrapper{display:flex;flex-direction:column;gap:0;border:1px solid #ddeab8;border-radius:12px;overflow:hidden;background:#fff}
+.chat-results-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #f0f5e0}
+.chat-results-title{font-size:14px;font-weight:600;color:#1a1a1a}
+.chat-results-meta{font-size:12px;color:#999;margin-top:2px}
+.results-table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:9px 12px;font-weight:700;color:#1a1a1a;border-bottom:2px solid #1a1a1a;font-size:12px;background:#fff}
+td{padding:9px 12px;color:#333;border-bottom:1px solid #f0f5e0}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafff5}
+
+/* Pagination */
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid #f0f5e0;background:#fafff5}
+.pagination-info{font-size:12px;color:#888}
+.pagination-controls{display:flex;align-items:center;gap:4px}
+.page-btn{min-width:28px;height:28px;padding:0 6px;border:1px solid #ddeab8;border-radius:6px;background:#fff;font-size:12px;font-weight:600;color:#555;font-family:'Inter',sans-serif;cursor:pointer;transition:all 0.12s;display:flex;align-items:center;justify-content:center}
+.page-btn:hover{border-color:#A2DD2C;color:#3B6D11;background:#f5fde8}
+.page-btn.active{background:#A2DD2C;border-color:#A2DD2C;color:#1a4a1a}
+.page-btn:disabled{opacity:0.4;cursor:not-allowed}
+
+/* AI interpretation */
+.chat-answer{padding:12px 16px;border-top:1px solid #f0f5e0;background:#fafff5;font-size:13px;color:#444;line-height:1.6}
+.chat-answer-label{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#aaa;margin-bottom:4px}
+
+/* Chat input bar */
+.chat-input-bar{padding:14px 28px 18px;border-top:1px solid #ddeab8;background:#F9FDF2;display:flex;align-items:flex-end;gap:10px}
+.chat-input-wrap{flex:1;position:relative}
+.chat-input{width:100%;padding:12px 16px;border:1px solid #ddeab8;border-radius:12px;background:#fff;font-size:14px;font-family:'Inter',sans-serif;color:#1a1a1a;resize:none;outline:none;transition:border-color 0.15s;min-height:48px;max-height:140px;line-height:1.5}
+.chat-input:focus{border-color:#A2DD2C;box-shadow:0 0 0 3px rgba(162,221,44,0.12)}
+.chat-input::placeholder{color:#bbb}
+.send-btn{width:44px;height:44px;border:none;border-radius:10px;background:#ddeab8;color:#888;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0}
+.send-btn.ready{background:#A2DD2C;color:#1a4a1a}
+.send-btn.ready:hover{background:#8ec920}
+.send-btn:disabled{opacity:0.5;cursor:not-allowed}
+
+/* ── DB sub-nav layout ── */
+#page-db{padding:0!important;overflow:hidden!important}
+.db-layout{display:grid;grid-template-columns:220px 1fr;height:100%;overflow:hidden}
+.db-subnav{background:#f9fdf2;border-right:1px solid #ddeab8;overflow-y:auto;padding:8px 0}
+.db-subnav-label{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#aaa;padding:14px 16px 6px}
+.db-subnav-item{display:flex;align-items:center;gap:9px;padding:8px 16px;font-size:13px;color:#555;cursor:pointer;transition:all 0.12s;user-select:none}
+.db-subnav-item svg{width:14px;height:14px;flex-shrink:0}
+.db-subnav-item:hover{background:#f9fdf2;color:#1a1a1a}
+.db-subnav-item.active{background:#8AEAB4B3;color:#1a4a1a;font-weight:600}
+.db-content{overflow-y:auto;height:100%}
+.db-connections-wrap{padding:24px 28px;display:flex;flex-direction:column;gap:20px}
+
+/* ── Schema Visualizer ── */
+.schema-viz-wrap{padding:24px 28px}
+.schema-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px}
+.schema-table-card{background:#fff;border:1px solid #ddeab8;border-radius:10px;overflow:hidden;font-size:13px}
+.schema-table-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #f0f5e0;background:#fafff5}
+.schema-table-name{font-weight:600;color:#1a1a1a;display:flex;align-items:center;gap:6px;font-size:13px}
+.schema-col-row{display:flex;align-items:center;padding:5px 14px;gap:8px;border-bottom:1px solid #f5f8f0}
+.schema-col-row:last-child{border-bottom:none}
+.schema-col-icon{width:12px;height:12px;flex-shrink:0}
+.schema-col-name{flex:1;color:#333;font-size:12px}
+.schema-col-type{font-size:11px;color:#bbb;font-family:'JetBrains Mono',monospace;text-transform:lowercase}
+
+/* ── SQL Editor ── */
+.sqleditor-wrap{padding:24px 28px;display:flex;flex-direction:column;gap:16px;height:100%;overflow-y:auto}
+.sqleditor-block{border:1px solid #c8dfa0;border-radius:12px;overflow:hidden;background:#f5f9ed;display:flex;flex-direction:column}
+.sqleditor-toolbar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#eaf2d0;border-bottom:1px solid #c8dfa0;gap:10px}
+.sqleditor-toolbar-left{display:flex;align-items:center;gap:8px}
+.sqleditor-label{font-size:12px;font-weight:700;color:#3B6D11;letter-spacing:0.03em}
+.sqleditor-hint{font-size:11px;color:#7a9a50}
+.sqleditor-textarea{width:100%;min-height:180px;max-height:360px;padding:16px;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.75;color:#2d5a00;background:#f5f9ed;border:none;resize:vertical;outline:none;tab-size:2}
+.sqleditor-textarea:focus{outline:1px solid #A2DD2C;background:#eef8e0}
+.sqleditor-textarea::placeholder{color:#aac880;font-style:italic}
+.sqleditor-results{border:1px solid #ddeab8;border-radius:12px;overflow:hidden;background:#fff}
+.sqleditor-results-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #f0f5e0}
+.sqleditor-results-title{font-size:14px;font-weight:600;color:#1a1a1a}
+.sqleditor-results-meta{font-size:12px;color:#999;margin-top:2px}
+.sqleditor-empty{text-align:center;padding:32px;color:#bbb;font-size:13px}
+
+/* ── Tables list ── */
+.tables-wrap{padding:24px 28px}
+.tables-list{background:#fff;border:1px solid #ddeab8;border-radius:10px;overflow:hidden;margin-top:16px}
+.tables-list-hdr{display:grid;grid-template-columns:1fr 120px 100px 28px;padding:8px 16px;background:#f5fde8;border-bottom:1px solid #e8f0d0;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#888}
+.tables-list-row{display:grid;grid-template-columns:1fr 120px 100px 28px;padding:11px 16px;border-bottom:1px solid #f0f5e0;font-size:13px;cursor:pointer;transition:background 0.1s;align-items:center}
+.tables-list-row:hover{background:#fafff5}
+.tables-list-row.expanded{background:#f5fde8;border-bottom:none}
+.tbl-name-cell{display:flex;align-items:center;gap:8px;font-weight:500;color:#1a1a1a}
+.tbl-name-cell svg{width:14px;height:14px;color:#A2DD2C;flex-shrink:0}
+.tbl-stat{color:#999;font-size:12px}
+.tbl-chevron{display:flex;align-items:center;justify-content:center;color:#aaa;transition:transform 0.2s}
+.tables-list-row.expanded .tbl-chevron{transform:rotate(180deg);color:#3B6D11}
+.tbl-data-panel{border-bottom:1px solid #f0f5e0;background:#fff;display:none}
+.tbl-data-panel.open{display:block}
+.tbl-data-panel .results-table-wrap{overflow-x:auto;max-height:320px;overflow-y:auto}
+.tbl-data-panel table th{background:#fafff5;font-size:11px;padding:7px 12px}
+.tbl-data-panel table td{font-size:12px;padding:6px 12px}
+.tbl-data-loading{padding:20px;text-align:center;color:#aaa;font-size:13px}
+
+/* ── Viz page ── */
+.viz-layout{display:grid;grid-template-columns:280px 1fr;flex:1;overflow:hidden;height:100%}
+.config-panel{border-right:1px solid #ddeab8;padding:18px;overflow-y:auto;display:flex;flex-direction:column;gap:14px;background:#F9FDF2}
+.section-label{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#aaa;margin-bottom:4px}
+.chart-type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.ct-btn{border:1px solid #ddeab8;border-radius:8px;padding:10px 6px;background:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;transition:all 0.15s;color:#666;font-family:'Inter',sans-serif}
+.ct-btn:hover{border-color:#A2DD2C;background:#f5fde8}
+.ct-btn.active{border-color:#A2DD2C;background:#f0fcd6;color:#3B6D11}
+.ct-btn svg{width:20px;height:20px}
+.ct-label{font-size:11px;font-weight:600}
+.field-sm{display:flex;flex-direction:column;gap:4px}
+.field-sm label{font-size:12px;font-weight:600;color:#555}
+.field-sm label .req{color:#e57373}
+.divider{height:1px;background:#e8f0d0}
+.toggle-row{display:flex;align-items:center;justify-content:space-between}
+.toggle-label-sm{font-size:13px;color:#555}
+.toggle{position:relative;width:34px;height:19px;cursor:pointer;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.ttrack{position:absolute;inset:0;background:#ddeab8;border-radius:999px;transition:background 0.2s}
+.toggle input:checked+.ttrack{background:#A2DD2C}
+.tthumb{position:absolute;top:2px;left:2px;width:15px;height:15px;background:#fff;border-radius:50%;transition:transform 0.2s;pointer-events:none}
+.toggle input:checked~.tthumb{transform:translateX(15px)}
+.chart-pane{display:flex;flex-direction:column;overflow:hidden}
+.chart-topbar{padding:14px 20px;border-bottom:1px solid #ddeab8;display:flex;align-items:center;justify-content:space-between;background:#fff}
+.chart-canvas-wrap{flex:1;padding:20px;display:flex;align-items:center;justify-content:center;background:#fff;overflow:hidden}
+.chart-canvas-wrap canvas{max-height:360px;max-width:100%}
+.data-preview-strip{border-top:1px solid #ddeab8;padding:12px 20px;background:#fff}
+.preview-lbl{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#aaa;margin-bottom:8px}
+#page-viz{padding:0;overflow:hidden;height:calc(100vh - 73px)}
+
+/* ── Misc ── */
+.error-msg{color:#e53e3e;font-size:13px;padding:10px 14px;background:#fff5f5;border:1px solid #fed7d7;border-radius:8px}
+.empty-state{text-align:center;padding:40px;color:#aaa;font-size:13px}
+.sqlite-path-fields{display:flex;flex-direction:column;gap:10px}
+.pg-mysql-fields{display:flex;flex-direction:column;gap:10px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── SIDEBAR ── -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <!-- Expanded logo -->
+      <svg class="logo-full" width="120" height="32" viewBox="0 0 120 32">
+        <text x="0" y="26" font-family="Inter,sans-serif" font-size="26" font-weight="800" fill="#A2DD2C" letter-spacing="-1">inquery</text>
+      </svg>
+      <!-- Collapsed logo -->
+      <svg class="logo-icon" width="32" height="32" viewBox="0 0 32 32" style="display:none">
+        <rect x="0" y="0" width="32" height="32" rx="8" fill="#A2DD2C"/>
+        <text x="4" y="24" font-family="Inter,sans-serif" font-size="19" font-weight="800" fill="#1a4a1a" letter-spacing="-0.5">iq</text>
+      </svg>
+      <button class="sidebar-toggle" onclick="toggleSidebar()" title="Collapse sidebar">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <button class="sidebar-expand" onclick="toggleSidebar()" title="Expand sidebar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+
+    <div class="nav-items">
+      <div class="nav-item active" id="nav-db" onclick="navClick('db')">
+        <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0018 0V5"/><path d="M3 12a9 3 0 0018 0"/></svg></div>
+        <span class="nav-label">Database</span>
+      </div>
+      <div class="nav-item" id="nav-query" onclick="navClick('query')">
+        <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div>
+        <span class="nav-label">Query Data</span>
+      </div>
+      <div class="nav-item" id="nav-viz" onclick="navClick('viz')">
+        <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="10" width="4" height="11" rx="1"/><rect x="10" y="6" width="4" height="15" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></div>
+        <span class="nav-label">Visualize Results</span>
+      </div>
+    </div>
+
+    <div class="sidebar-footer" id="sidebar-footer">No connection active</div>
+  </div>
+
+  <!-- ── MAIN ── -->
+  <div class="main">
+    <div class="topbar" id="topbar">
+      <h1 id="page-title">Database</h1>
+      <p id="page-sub">Connect to your data source</p>
+    </div>
+
+    <!-- DATABASE PAGE -->
+    <div id="page-db" class="page active">
+      <div class="db-layout">
+        <div class="db-subnav">
+          <div class="db-subnav-label">Database Management</div>
+          <div class="db-subnav-item active" id="dbnav-connections" onclick="showDbView('connections')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Connections
+          </div>
+          <div class="db-subnav-item" id="dbnav-schema" onclick="showDbView('schema')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            Schema Visualizer
+          </div>
+          <div class="db-subnav-item" id="dbnav-tables" onclick="showDbView('tables')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+            Tables
+          </div>
+          <div class="db-subnav-item" id="dbnav-sqleditor" onclick="showDbView('sqleditor')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            SQL Editor
+          </div>
+        </div>
+
+        <div class="db-content" id="db-content">
+          <!-- Connections view -->
+          <div id="db-connections-view" class="db-connections-wrap">
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A2DD2C" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  Saved connections
+                </div>
+                <button class="btn-primary green" onclick="showNewConn()">+ New connection</button>
+              </div>
+              <div class="card-body">
+                <div class="saved-connections" id="connections-list">
+                  <div class="empty-state">Loading connections...</div>
+                </div>
+              </div>
+            </div>
+            <div class="card" id="new-conn-card" style="display:none">
+              <div class="card-header"><div class="card-title">Add new connection</div></div>
+              <div class="card-body" style="display:flex;flex-direction:column;gap:16px">
+                <div>
+                  <div class="section-label" style="margin-bottom:8px">Database type</div>
+                  <div class="db-types">
+                    <button class="db-type-btn" id="dbt-postgresql" onclick="selectDbType('postgresql',this)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0018 0V5"/><path d="M3 12a9 3 0 0018 0"/></svg>
+                      <span class="db-type-label">PostgreSQL</span>
+                    </button>
+                    <button class="db-type-btn" id="dbt-mysql" onclick="selectDbType('mysql',this)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                      <span class="db-type-label">MySQL</span>
+                    </button>
+                    <button class="db-type-btn active" id="dbt-sqlite" onclick="selectDbType('sqlite',this)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+                      <span class="db-type-label">SQLite</span>
+                    </button>
+                  </div>
+                </div>
+                <div id="sqlite-fields" class="sqlite-path-fields">
+                  <div class="field">
+                    <label>Database file</label>
+                    <select id="sqlite-db-select" onchange="onSqliteSelectChange(this)">
+                      <option value="">Loading databases...</option>
+                    </select>
+                  </div>
+                  <div class="field" id="sqlite-custom-path-field" style="display:none">
+                    <label>Custom path</label>
+                    <input type="text" id="sqlite-custom-path" placeholder="/path/to/database.sqlite">
+                  </div>
+                </div>
+                <div id="pg-mysql-fields" class="pg-mysql-fields" style="display:none">
+                  <div class="form-grid">
+                    <div class="field"><label>Host</label><input type="text" id="conn-host" placeholder="localhost"></div>
+                    <div class="field"><label>Port</label><input type="number" id="conn-port" placeholder="5432"></div>
+                    <div class="field"><label>Database name</label><input type="text" id="conn-database" placeholder="my_database"></div>
+                    <div class="field"><label>Username</label><input type="text" id="conn-username" placeholder="postgres"></div>
+                  </div>
+                  <div class="form-grid full">
+                    <div class="field"><label>Password</label><input type="password" id="conn-password" placeholder="••••••••"></div>
+                  </div>
+                </div>
+                <div class="form-grid full">
+                  <div class="field"><label>Connection name</label><input type="text" id="conn-name" placeholder="e.g. Production DB"></div>
+                </div>
+                <div class="btn-row">
+                  <button class="btn-ghost" onclick="hideNewConn()">Cancel</button>
+                  <button class="btn-ghost" id="test-conn-btn" onclick="testConnection()">Test connection</button>
+                  <button class="btn-primary" id="save-conn-btn" onclick="saveConnection()">Save connection</button>
+                </div>
+                <div id="conn-test-result" style="display:none"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Schema Visualizer view -->
+          <div id="db-schema-view" style="display:none"></div>
+          <!-- Tables view -->
+          <div id="db-tables-view" style="display:none"></div>
+          <!-- SQL Editor view -->
+          <div id="db-sqleditor-view" style="display:none">
+            <div class="sqleditor-wrap">
+              <div class="sqleditor-block">
+                <div class="sqleditor-toolbar">
+                  <div class="sqleditor-toolbar-left">
+                    <span class="sqleditor-label">SQL Editor</span>
+                    <span class="sqleditor-hint">Shift+Enter to run</span>
+                  </div>
+                  <div style="display:flex;gap:8px">
+                    <button class="btn-ghost" style="font-size:12px;padding:5px 12px" onclick="clearEditor()">Clear</button>
+                    <button class="btn-primary green" style="font-size:12px;padding:5px 14px" id="editor-run-btn" onclick="runEditorQuery()">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="display:inline;margin-right:4px"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                      Run Query
+                    </button>
+                  </div>
+                </div>
+                <textarea
+                  class="sqleditor-textarea"
+                  id="sqleditor-input"
+                  placeholder="SELECT * FROM table_name LIMIT 100;"
+                  spellcheck="false"
+                  onkeydown="onEditorKeydown(event)"
+                ></textarea>
+              </div>
+              <div id="sqleditor-results"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUERY PAGE (chat) -->
+    <div id="page-query" class="page">
+      <div class="chat-layout">
+        <div class="chat-messages" id="chat-messages">
+          <div class="chat-empty" id="chat-empty">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <div>Ask a question about your data</div>
+          </div>
+        </div>
+        <div class="chat-input-bar">
+          <div class="chat-input-wrap">
+            <textarea class="chat-input" id="chat-input" placeholder="Ask a question about your data..." rows="1"
+              oninput="onChatInputChange(this)"
+              onkeydown="onChatInputKeydown(event)"></textarea>
+          </div>
+          <button class="send-btn" id="send-btn" onclick="submitQuery()" disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIZ PAGE -->
+    <div id="page-viz" class="page" style="padding:0;overflow:hidden">
+      <div class="viz-layout" style="height:100%">
+        <div class="config-panel">
+          <div>
+            <div class="section-label">Chart type</div>
+            <div class="chart-type-grid" style="margin-top:6px">
+              <button class="ct-btn active" id="ct-bar" onclick="selChart('bar',this)">
+                <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="10" width="4" height="11" rx="1"/><rect x="10" y="6" width="4" height="15" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>
+                <span class="ct-label">Bar</span>
+              </button>
+              <button class="ct-btn" id="ct-line" onclick="selChart('line',this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3,17 8,11 13,14 18,7 21,9"/></svg>
+                <span class="ct-label">Line</span>
+              </button>
+              <button class="ct-btn" id="ct-pie" onclick="selChart('pie',this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 1 10 10H12V2z" fill="currentColor" opacity="0.4"/><circle cx="12" cy="12" r="10"/></svg>
+                <span class="ct-label">Pie</span>
+              </button>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div>
+            <div class="section-label">Required</div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
+              <div class="field-sm"><label>X axis <span class="req">*</span></label>
+                <select id="v-x" onchange="onAxisChange('x',this.value)"><option value="">-- select column --</option></select>
+              </div>
+              <div class="field-sm"><label>Y axis <span class="req">*</span></label>
+                <select id="v-y" onchange="onAxisChange('y',this.value)"><option value="">-- select column --</option></select>
+              </div>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div>
+            <div class="section-label">Optional</div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
+              <div class="field-sm"><label>Chart title</label>
+                <input type="text" id="v-title" placeholder="Auto from query" oninput="document.getElementById('chart-title-txt').textContent=this.value||'Chart'">
+              </div>
+              <div class="field-sm"><label>Sort</label>
+                <select id="v-sort" onchange="redrawChart()"><option value="none">No sort</option><option value="desc">↓ Descending</option><option value="asc">↑ Ascending</option></select>
+              </div>
+              <div class="field-sm"><label>Format</label>
+                <select id="v-fmt" onchange="redrawChart()"><option value="number">Number</option><option value="currency">¥ Currency</option><option value="percent">% Percent</option></select>
+              </div>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="toggle-row">
+              <span class="toggle-label-sm">Show legend</span>
+              <label class="toggle"><input type="checkbox" id="v-legend" checked onchange="redrawChart()"><div class="ttrack"></div><div class="tthumb"></div></label>
+            </div>
+            <div class="toggle-row">
+              <span class="toggle-label-sm">Show grid</span>
+              <label class="toggle"><input type="checkbox" id="v-grid" checked onchange="redrawChart()"><div class="ttrack"></div><div class="tthumb"></div></label>
+            </div>
+          </div>
+          <button class="btn-primary" style="margin-top:4px" onclick="redrawChart()">Update chart</button>
+        </div>
+        <div class="chart-pane">
+          <div class="chart-topbar">
+            <div style="font-size:15px;font-weight:600" id="chart-title-txt">Chart</div>
+            <button class="btn-ghost" style="font-size:12px;padding:6px 14px" onclick="exportPNG()">Export PNG</button>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas id="vizChart" width="500" height="280"></canvas>
+          </div>
+          <div class="data-preview-strip">
+            <div class="preview-lbl">Data preview</div>
+            <div style="overflow-x:auto"><table id="preview-table"></table></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+const API = 'http://localhost:8000';
+const GREENS = ['#A2DD2C','#8AEAB4','#c6f135','#3B6D11','#ddf76a','#6ec200','#b8f096','#4a9400'];
+const PAGE_SIZE = 10;
+
+const S = {
+  connections: [],
+  activeConn: null,
+  dbPath: null,
+  question: '',
+  sql: '',
+  dfJson: null,
+  answer: '',
+  execTime: null,
+  currentPage: 'db',
+  sqliteDbs: [],
+  chartType: 'bar',
+  vizChart: null,
+  chartX: null,
+  chartY: null,
+  recentQueries: [],
+  chatTurns: [],         // [{id, question, sql, rows, answer, execTime, page, sqlEditing}]
+  sidebarCollapsed: false,
+};
+
+const PAGES = {
+  db:    {title:'Database',          sub:'Connect to your data source'},
+  query: {title:'Query Data',        sub:'Use natural language — AI will generate your SQL query'},
+  viz:   {title:'Visualize Results', sub:'Configure and create your data chart'},
+};
+
+// ── Utilities ──────────────────────────────────────────────────────────────
+
+async function apiFetch(path, opts={}) {
+  const res = await fetch(API + path, {
+    headers: {'Content-Type':'application/json'},
+    ...opts,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function highlightSQL(sql) {
+  if (!sql) return '';
+  const KWS = /\b(SELECT|FROM|WHERE|GROUP BY|ORDER BY|HAVING|JOIN|LEFT JOIN|RIGHT JOIN|INNER JOIN|ON|AS|AND|OR|NOT|IN|IS|NULL|DISTINCT|LIMIT|OFFSET|UNION|ALL|INSERT|UPDATE|DELETE|SET|CREATE|DROP|ALTER|TABLE|INDEX|WITH|CASE|WHEN|THEN|ELSE|END|BY|ASC|DESC|COUNT|SUM|AVG|MIN|MAX|COALESCE|CAST|OVER|PARTITION)\b/gi;
+  const FNS  = /\b(COUNT|SUM|AVG|MIN|MAX|ROUND|COALESCE|CAST|LENGTH|SUBSTR|TRIM|UPPER|LOWER|REPLACE|IFNULL|NULLIF|STRFTIME|DATE|DATETIME|NOW|YEAR|MONTH|DAY|CONCAT|GROUP_CONCAT|ROW_NUMBER|RANK|DENSE_RANK|LAG|LEAD|NTILE|FIRST_VALUE|LAST_VALUE)\b(?=\s*\()/gi;
+  let out = sql.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  out = out.replace(/'([^']*)'/g, (_,g)=>`<span class="sql-str">'${g}'</span>`);
+  out = out.replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="sql-num">$1</span>');
+  out = out.replace(FNS, m=>`<span class="sql-fn">${m}</span>`);
+  out = out.replace(KWS, m=>`<span class="sql-kw">${m}</span>`);
+  return out;
+}
+
+// ── Sidebar ────────────────────────────────────────────────────────────────
+
+function toggleSidebar() {
+  S.sidebarCollapsed = !S.sidebarCollapsed;
+  const sb = document.getElementById('sidebar');
+  sb.classList.toggle('collapsed', S.sidebarCollapsed);
+  localStorage.setItem('inquery_sidebar_collapsed', S.sidebarCollapsed ? '1' : '0');
+}
+
+function initSidebar() {
+  const saved = localStorage.getItem('inquery_sidebar_collapsed');
+  if (saved === '1') {
+    S.sidebarCollapsed = true;
+    document.getElementById('sidebar').classList.add('collapsed');
+  }
+}
+
+// Navigate: if collapsed, expand first then go to page
+function navClick(id) {
+  if (S.sidebarCollapsed) {
+    S.sidebarCollapsed = false;
+    document.getElementById('sidebar').classList.remove('collapsed');
+    localStorage.setItem('inquery_sidebar_collapsed', '0');
+  }
+  showPage(id, document.getElementById('nav-' + id));
+}
+
+// ── Page navigation ────────────────────────────────────────────────────────
+
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (el) el.classList.add('active');
+  document.getElementById('page-title').textContent = PAGES[id].title;
+  document.getElementById('page-sub').textContent   = PAGES[id].sub;
+  S.currentPage = id;
+  if (id === 'viz') {
+    populateVizAxes();
+    setTimeout(redrawChart, 100);
+  }
+}
+
+function updateSidebarFooter() {
+  const el = document.getElementById('sidebar-footer');
+  if (S.activeConn) {
+    const type = S.activeConn.type || 'SQLite';
+    el.innerHTML = `Connected to<br><span>${type} · ${S.activeConn.name}</span>`;
+  } else {
+    el.innerHTML = 'No connection active';
+  }
+}
+
+// ── Database sub-nav ───────────────────────────────────────────────────────
+
+function showDbView(view) {
+  ['connections','schema','tables','sqleditor'].forEach(v => {
+    document.getElementById('dbnav-' + v).classList.toggle('active', v === view);
+    document.getElementById('db-' + v + '-view').style.display = (v === view) ? 'block' : 'none';
+  });
+  if (view === 'schema')     renderSchemaVisualizer();
+  if (view === 'tables')     renderTablesView();
+  if (view === 'sqleditor')  initSQLEditor();
+}
+
+async function renderSchemaVisualizer() {
+  const el = document.getElementById('db-schema-view');
+  if (!S.dbPath) {
+    el.innerHTML = '<div class="schema-viz-wrap"><div class="empty-state">Connect to a database first to view the schema.</div></div>';
+    return;
+  }
+  el.innerHTML = '<div class="schema-viz-wrap"><div class="empty-state">Loading schema…</div></div>';
+  try {
+    const data = await apiFetch('/api/schema-info?db_path=' + encodeURIComponent(S.dbPath));
+    const tables = data.tables || [];
+    if (!tables.length) {
+      el.innerHTML = '<div class="schema-viz-wrap"><div class="empty-state">No tables found.</div></div>';
+      return;
+    }
+    const PK_ICON  = `<svg class="schema-col-icon" viewBox="0 0 24 24" fill="#f6ad55"><polygon points="12,2 15,9 22,9 16.5,14 18.5,21 12,17 5.5,21 7.5,14 2,9 9,9"/></svg>`;
+    const FK_ICON  = `<svg class="schema-col-icon" viewBox="0 0 24 24" fill="none" stroke="#a0aec0" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v7M12 15v7M2 12h7M15 12h7"/></svg>`;
+    const COL_ICON = `<svg class="schema-col-icon" viewBox="0 0 24 24" fill="none" stroke="#cbd5e0" stroke-width="2"><circle cx="12" cy="12" r="4"/></svg>`;
+    const TABLE_ICON = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#A2DD2C" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>`;
+    const cards = tables.map(t => {
+      const colRows = t.columns.map(c =>
+        `<div class="schema-col-row">
+          ${c.pk ? PK_ICON : c.fk ? FK_ICON : COL_ICON}
+          <span class="schema-col-name">${escHtml(c.name)}</span>
+          <span class="schema-col-type">${escHtml((c.type||'text').toLowerCase())}</span>
+        </div>`
+      ).join('');
+      return `<div class="schema-table-card">
+        <div class="schema-table-header"><div class="schema-table-name">${TABLE_ICON} ${escHtml(t.name)}</div></div>
+        ${colRows}
+      </div>`;
+    }).join('');
+    el.innerHTML = `<div class="schema-viz-wrap"><div class="schema-grid">${cards}</div></div>`;
+  } catch(e) {
+    el.innerHTML = `<div class="schema-viz-wrap"><div class="error-msg">Failed to load schema: ${escHtml(e.message)}</div></div>`;
+  }
+}
+
+const _tableDataCache = {}; // tableName → {rows, page}
+
+async function renderTablesView() {
+  const el = document.getElementById('db-tables-view');
+  if (!S.dbPath) {
+    el.innerHTML = '<div class="tables-wrap"><div class="empty-state">Connect to a database first to view tables.</div></div>';
+    return;
+  }
+  el.innerHTML = '<div class="tables-wrap"><div class="empty-state">Loading tables…</div></div>';
+  try {
+    const data = await apiFetch('/api/schema-info?db_path=' + encodeURIComponent(S.dbPath));
+    const tables = data.tables || [];
+    if (!tables.length) {
+      el.innerHTML = '<div class="tables-wrap"><div class="empty-state">No tables found.</div></div>';
+      return;
+    }
+    const TABLE_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="#A2DD2C" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>`;
+    const CHEVRON = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>`;
+    const rows = tables.map(t => `
+      <div>
+        <div class="tables-list-row" id="tbl-row-${escHtml(t.name)}" onclick="toggleTableData('${escHtml(t.name)}', ${t.row_count ?? 0})">
+          <div class="tbl-name-cell">${TABLE_ICON} ${escHtml(t.name)}</div>
+          <div class="tbl-stat">${t.columns.length} columns</div>
+          <div class="tbl-stat">${t.row_count != null ? t.row_count.toLocaleString() + ' rows' : '—'}</div>
+          <div class="tbl-chevron">${CHEVRON}</div>
+        </div>
+        <div class="tbl-data-panel" id="tbl-panel-${escHtml(t.name)}"></div>
+      </div>`).join('');
+    el.innerHTML = `<div class="tables-wrap">
+      <div class="tables-list">
+        <div class="tables-list-hdr"><div>Name</div><div>Columns</div><div>Rows</div><div></div></div>
+        ${rows}
+      </div>
+    </div>`;
+  } catch(e) {
+    el.innerHTML = `<div class="tables-wrap"><div class="error-msg">Failed to load tables: ${escHtml(e.message)}</div></div>`;
+  }
+}
+
+async function toggleTableData(tableName, rowCount) {
+  const row   = document.getElementById('tbl-row-' + tableName);
+  const panel = document.getElementById('tbl-panel-' + tableName);
+  if (!row || !panel) return;
+
+  const isOpen = panel.classList.contains('open');
+  if (isOpen) {
+    // collapse
+    panel.classList.remove('open');
+    row.classList.remove('expanded');
+    return;
+  }
+
+  // expand
+  row.classList.add('expanded');
+  panel.classList.add('open');
+
+  if (_tableDataCache[tableName]) {
+    renderTablePanel(tableName);
+    return;
+  }
+
+  panel.innerHTML = `<div class="tbl-data-loading">Loading data…</div>`;
+  try {
+    const sql = `SELECT * FROM \`${tableName}\` LIMIT 500`;
+    const data = await apiFetch('/api/run-query', {
+      method: 'POST',
+      body: JSON.stringify({question: '', sql, db_path: S.dbPath}),
+    });
+    let rows = null;
+    if (data.df_json) {
+      try { rows = JSON.parse(data.df_json); } catch(_) { rows = data.df_json; }
+      if (!Array.isArray(rows)) rows = null;
+    }
+    _tableDataCache[tableName] = {rows: rows || [], page: 1};
+    renderTablePanel(tableName);
+  } catch(e) {
+    panel.innerHTML = `<div style="padding:12px 16px"><div class="error-msg">${escHtml(e.message)}</div></div>`;
+  }
+}
+
+function renderTablePanel(tableName) {
+  const panel = document.getElementById('tbl-panel-' + tableName);
+  if (!panel) return;
+  const cache = _tableDataCache[tableName];
+  if (!cache) return;
+  const {rows, page} = cache;
+
+  if (!rows.length) {
+    panel.innerHTML = `<div class="tbl-data-loading">No rows found.</div>`;
+    return;
+  }
+
+  const totalRows  = rows.length;
+  const totalPages = Math.ceil(totalRows / PAGE_SIZE);
+  const start = (page - 1) * PAGE_SIZE;
+  const end   = Math.min(start + PAGE_SIZE, totalRows);
+  const pageRows = rows.slice(start, end);
+  const cols = Object.keys(rows[0]);
+
+  const thead = `<thead><tr>${cols.map(c=>`<th>${escHtml(c)}</th>`).join('')}</tr></thead>`;
+  const tbody = `<tbody>${pageRows.map(r=>`<tr>${cols.map(c=>`<td>${escHtml(String(r[c]??''))}</td>`).join('')}</tr>`).join('')}</tbody>`;
+
+  let paginationHTML = '';
+  if (totalPages > 1) {
+    let pStart = Math.max(1, page - 2);
+    let pEnd   = Math.min(totalPages, pStart + 4);
+    if (pEnd - pStart < 4) pStart = Math.max(1, pEnd - 4);
+    let pageButtons = '';
+    for (let p = pStart; p <= pEnd; p++) {
+      pageButtons += `<button class="page-btn${p===page?' active':''}" onclick="goToTablePage('${tableName}',${p})">${p}</button>`;
+    }
+    paginationHTML = `<div class="pagination" style="background:#fafff5">
+      <span class="pagination-info">Showing ${start+1}–${end} of ${totalRows} rows</span>
+      <div class="pagination-controls">
+        <button class="page-btn" onclick="goToTablePage('${tableName}',${page-1})" ${page<=1?'disabled':''}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        ${pageButtons}
+        <button class="page-btn" onclick="goToTablePage('${tableName}',${page+1})" ${page>=totalPages?'disabled':''}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>`;
+  } else {
+    paginationHTML = `<div style="padding:8px 16px;background:#fafff5;border-top:1px solid #f0f5e0"><span class="pagination-info">${totalRows} row${totalRows!==1?'s':''}</span></div>`;
+  }
+
+  panel.innerHTML = `<div class="results-table-wrap"><table>${thead}${tbody}</table></div>${paginationHTML}`;
+}
+
+function goToTablePage(tableName, page) {
+  const cache = _tableDataCache[tableName];
+  if (!cache) return;
+  const totalPages = Math.ceil(cache.rows.length / PAGE_SIZE);
+  if (page < 1 || page > totalPages) return;
+  cache.page = page;
+  renderTablePanel(tableName);
+}
+
+// ── Database / Connections ─────────────────────────────────────────────────
+
+async function loadConnectionsPage() {
+  await Promise.all([loadConnections(), loadSqliteDbs()]);
+}
+
+async function loadConnections() {
+  try {
+    const data = await apiFetch('/api/connections');
+    S.connections = data.connections || [];
+    renderConnectionsList();
+  } catch(e) {
+    document.getElementById('connections-list').innerHTML =
+      `<div class="error-msg">Failed to load connections: ${e.message}</div>`;
+  }
+}
+
+async function loadSqliteDbs() {
+  try {
+    const data = await apiFetch('/api/databases');
+    S.sqliteDbs = data.databases || [];
+    populateSqliteSelect();
+  } catch(e) {
+    S.sqliteDbs = [];
+    populateSqliteSelect();
+  }
+}
+
+function populateSqliteSelect() {
+  const sel = document.getElementById('sqlite-db-select');
+  sel.innerHTML = '';
+  S.sqliteDbs.forEach(db => {
+    const opt = document.createElement('option');
+    opt.value = db.path;
+    opt.textContent = db.name;
+    sel.appendChild(opt);
+  });
+  const custom = document.createElement('option');
+  custom.value = '__custom__';
+  custom.textContent = 'Custom path...';
+  sel.appendChild(custom);
+}
+
+function onSqliteSelectChange(sel) {
+  document.getElementById('sqlite-custom-path-field').style.display =
+    sel.value === '__custom__' ? 'block' : 'none';
+}
+
+function renderConnectionsList() {
+  const el = document.getElementById('connections-list');
+  if (!S.connections.length) {
+    el.innerHTML = '<div class="empty-state">No saved connections. Click "+ New connection" to add one.</div>';
+    return;
+  }
+  el.innerHTML = S.connections.map((conn, i) => {
+    const isActive = S.activeConn && S.activeConn.name === conn.name;
+    const t = (conn.type || '').toLowerCase();
+    const meta = t === 'sqlite'
+      ? `SQLite · ${conn.path || ''}`
+      : `${conn.type} · ${conn.host || ''}:${conn.port || ''}`;
+    return `<div class="conn-row">
+      <div class="conn-info">
+        <div class="conn-name">${escHtml(conn.name)}</div>
+        <div class="conn-meta">${escHtml(meta)}</div>
+      </div>
+      <div class="conn-actions">
+        ${isActive
+          ? `<button class="conn-btn active-conn">Active</button>`
+          : `<button class="conn-btn" onclick="connectTo(${i})">Connect</button>`
+        }
+        <button class="conn-btn" onclick="removeConnection('${escHtml(conn.name)}')">Remove</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function connectTo(idx) {
+  const conn = S.connections[idx];
+  if (!conn) return;
+  const t = (conn.type || '').toLowerCase();
+  let dbPath;
+  if (t === 'sqlite') {
+    dbPath = conn.path;
+  } else if (t === 'postgresql' || t === 'postgres') {
+    const user = encodeURIComponent(conn.username || '');
+    const pass = encodeURIComponent(conn.password || '');
+    const host = conn.host || 'localhost';
+    const port = conn.port || 5432;
+    const db   = conn.database || '';
+    dbPath = `postgresql://${user}:${pass}@${host}:${port}/${db}`;
+  } else if (t === 'mysql') {
+    const user = encodeURIComponent(conn.username || '');
+    const pass = encodeURIComponent(conn.password || '');
+    const host = conn.host || 'localhost';
+    const port = conn.port || 3306;
+    const db   = conn.database || '';
+    dbPath = `mysql://${user}:${pass}@${host}:${port}/${db}`;
+  } else {
+    alert(`Connection type "${conn.type}" is not yet supported.`);
+    return;
+  }
+  try {
+    await apiFetch('/api/connect', {method:'POST', body: JSON.stringify({db_path: dbPath})});
+    S.activeConn = conn;
+    S.dbPath = dbPath;
+    updateSidebarFooter();
+    renderConnectionsList();
+  } catch(e) {
+    alert('Connection failed: ' + e.message);
+  }
+}
+
+async function removeConnection(name) {
+  if (!confirm(`Remove connection "${name}"?`)) return;
+  try {
+    await apiFetch(`/api/connections/${encodeURIComponent(name)}`, {method:'DELETE'});
+    await loadConnections();
+  } catch(e) {
+    alert('Failed to remove: ' + e.message);
+  }
+}
+
+let _newConnDbType = 'sqlite';
+
+function showNewConn() {
+  document.getElementById('new-conn-card').style.display = 'block';
+  document.getElementById('conn-test-result').style.display = 'none';
+  selectDbType('sqlite', document.getElementById('dbt-sqlite'));
+}
+
+function hideNewConn() {
+  document.getElementById('new-conn-card').style.display = 'none';
+}
+
+function selectDbType(type, btn) {
+  _newConnDbType = type;
+  document.querySelectorAll('.db-type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const sqliteFields  = document.getElementById('sqlite-fields');
+  const pgMysqlFields = document.getElementById('pg-mysql-fields');
+  if (type === 'sqlite') {
+    sqliteFields.style.display  = 'flex';
+    pgMysqlFields.style.display = 'none';
+  } else {
+    sqliteFields.style.display  = 'none';
+    pgMysqlFields.style.display = 'flex';
+    const portInput = document.getElementById('conn-port');
+    if (portInput) portInput.placeholder = type === 'mysql' ? '3306' : '5432';
+  }
+}
+
+async function testConnection() {
+  const btn = document.getElementById('test-conn-btn');
+  const resEl = document.getElementById('conn-test-result');
+  btn.disabled = true; btn.textContent = '...'; resEl.style.display = 'none';
+  try {
+    const body = buildConnectionBody();
+    const data = await apiFetch('/api/test-connection', {method:'POST', body: JSON.stringify(body)});
+    resEl.style.display = 'flex';
+    if (data.ok) {
+      resEl.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;font-size:13px;font-weight:500;background:#f0fcd6;border:1px solid #c6f135;color:#3B6D11';
+      resEl.innerHTML = '<div style="width:8px;height:8px;border-radius:50%;background:#A2DD2C;flex-shrink:0"></div> ' + escHtml(data.message);
+    } else {
+      resEl.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;font-size:13px;font-weight:500;background:#fff5f5;border:1px solid #fed7d7;color:#e53e3e';
+      resEl.innerHTML = '<div style="width:8px;height:8px;border-radius:50%;background:#e53e3e;flex-shrink:0"></div> ' + escHtml(data.message);
+    }
+  } catch(e) {
+    resEl.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;font-size:13px;font-weight:500;background:#fff5f5;border:1px solid #fed7d7;color:#e53e3e';
+    resEl.innerHTML = '<div style="width:8px;height:8px;border-radius:50%;background:#e53e3e;flex-shrink:0"></div> ' + escHtml(e.message);
+    resEl.style.display = 'flex';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Test connection';
+  }
+}
+
+function buildConnectionBody() {
+  const name = document.getElementById('conn-name').value.trim();
+  if (_newConnDbType === 'sqlite') {
+    const sel = document.getElementById('sqlite-db-select');
+    const path = sel.value === '__custom__'
+      ? document.getElementById('sqlite-custom-path').value.trim()
+      : sel.value;
+    return {name, type: 'sqlite', path};
+  }
+  return {
+    name, type: _newConnDbType,
+    host: document.getElementById('conn-host').value.trim(),
+    port: parseInt(document.getElementById('conn-port').value) || null,
+    database: document.getElementById('conn-database').value.trim(),
+    username: document.getElementById('conn-username').value.trim(),
+    password: document.getElementById('conn-password').value,
+  };
+}
+
+async function saveConnection() {
+  const btn = document.getElementById('save-conn-btn');
+  const body = buildConnectionBody();
+  if (!body.name) { alert('Please enter a connection name.'); return; }
+  btn.disabled = true; btn.textContent = '...';
+  try {
+    await apiFetch('/api/connections', {method:'POST', body: JSON.stringify(body)});
+    hideNewConn();
+    await loadConnections();
+    document.getElementById('conn-name').value = '';
+  } catch(e) {
+    alert('Failed to save: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save connection';
+  }
+}
+
+// ── Chat input ─────────────────────────────────────────────────────────────
+
+function onChatInputChange(el) {
+  // auto-resize
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+  // toggle send button
+  const btn = document.getElementById('send-btn');
+  const hasText = el.value.trim().length > 0;
+  btn.disabled = !hasText;
+  btn.classList.toggle('ready', hasText);
+}
+
+function onChatInputKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    if (!document.getElementById('send-btn').disabled) submitQuery();
+  }
+}
+
+async function submitQuery() {
+  const input = document.getElementById('chat-input');
+  const question = input.value.trim();
+  if (!question) return;
+  if (!S.dbPath) { alert('No active database connection. Please connect to a database first.'); return; }
+
+  // Clear input
+  input.value = '';
+  input.style.height = 'auto';
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true;
+  btn.classList.remove('ready');
+
+  // Hide empty state
+  document.getElementById('chat-empty').style.display = 'none';
+
+  // Create turn
+  const turnId = Date.now();
+  const turn = {id: turnId, question, sql: null, rows: null, answer: null, execTime: null, page: 1, sqlEditing: false, loading: true};
+  S.chatTurns.push(turn);
+
+  appendChatTurn(turn);
+
+  // Step 1: generate SQL
+  try {
+    const sqlData = await apiFetch('/api/generate-sql', {
+      method: 'POST',
+      body: JSON.stringify({question, db_path: S.dbPath}),
+    });
+    if (sqlData.error) {
+      updateTurnError(turnId, sqlData.error);
+      return;
+    }
+    turn.sql = sqlData.sql || '';
+    turn.loading = false;
+    updateTurnSQL(turnId, turn.sql);
+  } catch(e) {
+    updateTurnError(turnId, e.message);
+  }
+}
+
+function appendChatTurn(turn) {
+  const container = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.id = 'turn-' + turn.id;
+  div.style.display = 'flex';
+  div.style.flexDirection = 'column';
+  div.style.gap = '12px';
+  div.innerHTML = `
+    <div class="chat-question-bubble">${escHtml(turn.question)}</div>
+    <div class="chat-sql-wrapper" id="sql-wrapper-${turn.id}">
+      <div class="chat-sql-header">
+        <span class="chat-sql-title">Generated SQL Query</span>
+        <div class="chat-sql-actions">
+          <button class="btn-ghost" style="font-size:12px;padding:5px 12px" onclick="editTurnSQL(${turn.id})">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;margin-right:4px"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit
+          </button>
+          <button class="btn-primary green" style="font-size:12px;padding:5px 14px" id="run-btn-${turn.id}" onclick="runTurnQuery(${turn.id})">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="display:inline;margin-right:4px"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Run Query
+          </button>
+        </div>
+      </div>
+      <div class="chat-sql-body" id="sql-body-${turn.id}">
+        <span style="color:#aaa;font-style:italic">Generating SQL…</span>
+      </div>
+    </div>
+  `;
+  container.appendChild(div);
+  div.scrollIntoView({behavior:'smooth', block:'end'});
+}
+
+function updateTurnSQL(turnId, sql) {
+  const bodyEl = document.getElementById('sql-body-' + turnId);
+  if (bodyEl) bodyEl.innerHTML = highlightSQL(sql);
+}
+
+function updateTurnError(turnId, msg) {
+  const wrapper = document.getElementById('sql-wrapper-' + turnId);
+  if (wrapper) {
+    wrapper.innerHTML = `<div style="padding:14px 16px"><div class="error-msg">${escHtml(msg)}</div></div>`;
+  }
+}
+
+function editTurnSQL(turnId) {
+  const turn = S.chatTurns.find(t => t.id === turnId);
+  if (!turn) return;
+  turn.sqlEditing = true;
+  const bodyEl = document.getElementById('sql-body-' + turnId);
+  bodyEl.contentEditable = 'true';
+  bodyEl.style.outline = '1px solid #A2DD2C';
+  bodyEl.style.background = '#eaf7d0';
+  bodyEl.textContent = turn.sql;
+  bodyEl.focus();
+}
+
+async function runTurnQuery(turnId) {
+  const turn = S.chatTurns.find(t => t.id === turnId);
+  if (!turn) return;
+
+  const bodyEl = document.getElementById('sql-body-' + turnId);
+  if (turn.sqlEditing) {
+    turn.sql = bodyEl.textContent.trim();
+    turn.sqlEditing = false;
+    bodyEl.contentEditable = 'false';
+    bodyEl.style.outline = '';
+    bodyEl.style.background = '';
+    bodyEl.innerHTML = highlightSQL(turn.sql);
+  }
+
+  if (!turn.sql) { alert('No SQL to run.'); return; }
+
+  const btn = document.getElementById('run-btn-' + turnId);
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span>Running…</span>'; }
+
+  // Remove previous results if re-running
+  const existingResults = document.getElementById('results-' + turnId);
+  if (existingResults) existingResults.remove();
+
+  try {
+    const data = await apiFetch('/api/run-query', {
+      method: 'POST',
+      body: JSON.stringify({question: turn.question, sql: turn.sql, db_path: S.dbPath}),
+    });
+
+    if (data.sql) {
+      turn.sql = data.sql;
+      if (bodyEl) bodyEl.innerHTML = highlightSQL(turn.sql);
+    }
+
+    let rows = null;
+    if (data.df_json) {
+      try { rows = JSON.parse(data.df_json); } catch(_) { rows = data.df_json; }
+      if (!Array.isArray(rows)) rows = null;
+    }
+
+    turn.rows = rows;
+    turn.answer = data.answer || null;
+    turn.execTime = data.exec_time;
+    turn.page = 1;
+
+    // Also update global state for viz
+    S.dfJson = rows;
+    S.question = turn.question;
+    S.sql = turn.sql;
+    S.answer = turn.answer;
+
+    renderTurnResults(turnId);
+  } catch(e) {
+    const container = document.getElementById('turn-' + turnId);
+    if (container) {
+      const errDiv = document.createElement('div');
+      errDiv.id = 'results-' + turnId;
+      errDiv.innerHTML = `<div class="error-msg">${escHtml(e.message)}</div>`;
+      container.appendChild(errDiv);
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="display:inline;margin-right:4px"><polygon points="5 3 19 12 5 21 5 3"/></svg> Run Query';
+    }
+  }
+}
+
+function renderTurnResults(turnId) {
+  const turn = S.chatTurns.find(t => t.id === turnId);
+  if (!turn) return;
+
+  // Remove existing
+  const existing = document.getElementById('results-' + turnId);
+  if (existing) existing.remove();
+
+  const container = document.getElementById('turn-' + turnId);
+  if (!container) return;
+
+  const rows = turn.rows;
+  const div = document.createElement('div');
+  div.id = 'results-' + turnId;
+
+  if (!rows || !rows.length) {
+    div.innerHTML = `<div class="chat-results-wrapper">
+      <div class="chat-results-header">
+        <div><div class="chat-results-title">Query Results</div><div class="chat-results-meta">No results returned</div></div>
+      </div>
+    </div>`;
+    container.appendChild(div);
+    div.scrollIntoView({behavior:'smooth', block:'end'});
+    return;
+  }
+
+  const totalRows = rows.length;
+  const totalPages = Math.ceil(totalRows / PAGE_SIZE);
+  const page = turn.page;
+  const start = (page - 1) * PAGE_SIZE;
+  const end = Math.min(start + PAGE_SIZE, totalRows);
+  const pageRows = rows.slice(start, end);
+  const cols = Object.keys(rows[0]);
+
+  const thead = `<thead><tr>${cols.map(c=>`<th>${escHtml(c)}</th>`).join('')}</tr></thead>`;
+  const tbody = `<tbody>${pageRows.map(r=>`<tr>${cols.map(c=>`<td>${escHtml(String(r[c]??''))}</td>`).join('')}</tr>`).join('')}</tbody>`;
+
+  let paginationHTML = '';
+  if (totalPages > 1) {
+    const prevDisabled = page <= 1 ? 'disabled' : '';
+    const nextDisabled = page >= totalPages ? 'disabled' : '';
+    let pageButtons = '';
+    // show up to 5 page buttons centered around current page
+    let pStart = Math.max(1, page - 2);
+    let pEnd   = Math.min(totalPages, pStart + 4);
+    if (pEnd - pStart < 4) pStart = Math.max(1, pEnd - 4);
+    for (let p = pStart; p <= pEnd; p++) {
+      pageButtons += `<button class="page-btn${p===page?' active':''}" onclick="goToPage(${turnId},${p})">${p}</button>`;
+    }
+    paginationHTML = `<div class="pagination">
+      <span class="pagination-info">Showing ${start+1}–${end} of ${totalRows} rows</span>
+      <div class="pagination-controls">
+        <button class="page-btn" onclick="goToPage(${turnId},${page-1})" ${prevDisabled}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        ${pageButtons}
+        <button class="page-btn" onclick="goToPage(${turnId},${page+1})" ${nextDisabled}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>`;
+  } else {
+    paginationHTML = `<div style="padding:8px 16px 10px;border-top:1px solid #f0f5e0;background:#fafff5">
+      <span class="pagination-info">${totalRows} row${totalRows!==1?'s':''} · ${turn.execTime ?? ''}s</span>
+    </div>`;
+  }
+
+  const answerHTML = turn.answer
+    ? `<div class="chat-answer"><div class="chat-answer-label">AI Interpretation</div>${escHtml(turn.answer)}</div>`
+    : '';
+
+  div.innerHTML = `<div class="chat-results-wrapper">
+    <div class="chat-results-header">
+      <div>
+        <div class="chat-results-title">Query Results</div>
+        <div class="chat-results-meta">${totalRows} row${totalRows!==1?'s':''}</div>
+      </div>
+      <button class="btn-primary" style="font-size:12px;padding:6px 14px" onclick="goToViz()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;margin-right:4px"><rect x="3" y="10" width="4" height="11" rx="1"/><rect x="10" y="6" width="4" height="15" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>
+        Create visualization
+      </button>
+    </div>
+    <div class="results-table-wrap"><table>${thead}${tbody}</table></div>
+    ${paginationHTML}
+    ${answerHTML}
+  </div>`;
+
+  container.appendChild(div);
+  div.scrollIntoView({behavior:'smooth', block:'end'});
+}
+
+function goToPage(turnId, page) {
+  const turn = S.chatTurns.find(t => t.id === turnId);
+  if (!turn || !turn.rows) return;
+  const totalPages = Math.ceil(turn.rows.length / PAGE_SIZE);
+  if (page < 1 || page > totalPages) return;
+  turn.page = page;
+  renderTurnResults(turnId);
+}
+
+function goToViz() {
+  showPage('viz', document.getElementById('nav-viz'));
+}
+
+// ── Viz page ───────────────────────────────────────────────────────────────
+
+function populateVizAxes() {
+  const xSel = document.getElementById('v-x');
+  const ySel = document.getElementById('v-y');
+  xSel.innerHTML = '<option value="">-- select column --</option>';
+  ySel.innerHTML = '<option value="">-- select column --</option>';
+  if (!S.dfJson || !S.dfJson.length) return;
+  const cols = Object.keys(S.dfJson[0]);
+  cols.forEach(col => {
+    xSel.innerHTML += `<option value="${escHtml(col)}">${escHtml(col)}</option>`;
+    ySel.innerHTML += `<option value="${escHtml(col)}">${escHtml(col)}</option>`;
+  });
+  if (!S.chartX && cols.length) { S.chartX = cols[0]; xSel.value = cols[0]; }
+  else if (S.chartX) xSel.value = S.chartX;
+  if (!S.chartY && cols.length > 1) {
+    const numCol = cols.find(c => typeof S.dfJson[0][c] === 'number') || cols[1];
+    S.chartY = numCol; ySel.value = numCol;
+  } else if (S.chartY) ySel.value = S.chartY;
+  const titleInput = document.getElementById('v-title');
+  if (!titleInput.value && S.question) {
+    titleInput.value = S.question;
+    document.getElementById('chart-title-txt').textContent = S.question;
+  }
+  renderPreviewTable();
+}
+
+function onAxisChange(axis, val) {
+  if (axis === 'x') S.chartX = val; else S.chartY = val;
+  redrawChart();
+}
+
+function selChart(type, btn) {
+  S.chartType = type;
+  document.querySelectorAll('.ct-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  redrawChart();
+}
+
+function redrawChart() {
+  if (!S.dfJson || !S.dfJson.length || !S.chartX || !S.chartY) return;
+  const sort = document.getElementById('v-sort').value;
+  const fmt  = document.getElementById('v-fmt').value;
+  const showLegend = document.getElementById('v-legend').checked;
+  const showGrid   = document.getElementById('v-grid').checked;
+  const titleTxt   = document.getElementById('v-title').value || S.question || 'Chart';
+  document.getElementById('chart-title-txt').textContent = titleTxt;
+  let data = S.dfJson.map(r => ({x: r[S.chartX], y: r[S.chartY]}));
+  if (sort === 'asc')  data.sort((a,b) => a.y - b.y);
+  if (sort === 'desc') data.sort((a,b) => b.y - a.y);
+  const labels = data.map(d => String(d.x));
+  const values = data.map(d => Number(d.y) || 0);
+  const fmtV = v => {
+    if (fmt === 'currency') return '¥' + v.toLocaleString();
+    if (fmt === 'percent')  return v.toFixed(1) + '%';
+    return v.toLocaleString();
+  };
+  const ctx = document.getElementById('vizChart').getContext('2d');
+  if (S.vizChart) { S.vizChart.destroy(); S.vizChart = null; }
+  const datasets = S.chartType === 'pie'
+    ? [{data: values, backgroundColor: GREENS, borderWidth: 0}]
+    : [{
+        label: S.chartY, data: values,
+        backgroundColor: S.chartType === 'line' ? 'transparent' : '#A2DD2Ccc',
+        borderColor: '#A2DD2C',
+        borderWidth: S.chartType === 'line' ? 2.5 : 0,
+        pointBackgroundColor: '#A2DD2C',
+        pointRadius: S.chartType === 'line' ? 4 : 0,
+        tension: 0.35,
+        borderRadius: S.chartType === 'bar' ? 4 : 0,
+      }];
+  S.vizChart = new Chart(ctx, {
+    type: S.chartType === 'bar' ? 'bar' : S.chartType,
+    data: {labels, datasets},
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: {display: showLegend && S.chartType === 'pie'},
+        tooltip: {callbacks: {label: c => fmtV(c.raw)}},
+      },
+      scales: S.chartType === 'pie' ? {} : {
+        x: {grid:{display:false}, ticks:{font:{family:'Inter',size:12},color:'#888'}},
+        y: {
+          display: showGrid, grid:{color:'#e4edd0',lineWidth:0.8}, border:{display:false},
+          ticks:{font:{family:'Inter',size:12},color:'#888',callback: v => fmtV(v)},
+        },
+      },
+    },
+  });
+}
+
+function renderPreviewTable() {
+  const table = document.getElementById('preview-table');
+  if (!S.dfJson || !S.dfJson.length) { table.innerHTML = ''; return; }
+  const rows = S.dfJson.slice(0, 5);
+  const cols = Object.keys(rows[0]);
+  table.innerHTML =
+    `<thead><tr>${cols.map(c=>`<th>${escHtml(c)}</th>`).join('')}</tr></thead>` +
+    `<tbody>${rows.map(r=>`<tr>${cols.map(c=>`<td>${escHtml(String(r[c]??''))}</td>`).join('')}</tr>`).join('')}</tbody>`;
+}
+
+function exportPNG() {
+  const canvas = document.getElementById('vizChart');
+  const link = document.createElement('a');
+  link.download = 'chart.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+// ── SQL Editor ─────────────────────────────────────────────────────────────
+
+const _editorState = { rows: null, page: 1, execTime: null };
+
+function initSQLEditor() {
+  if (!S.dbPath) {
+    document.getElementById('sqleditor-results').innerHTML =
+      `<div class="sqleditor-results" style="padding:20px"><div class="empty-state">Connect to a database first to use the SQL editor.</div></div>`;
+  }
+  // focus the textarea on open
+  setTimeout(() => {
+    const ta = document.getElementById('sqleditor-input');
+    if (ta) ta.focus();
+  }, 50);
+}
+
+function clearEditor() {
+  document.getElementById('sqleditor-input').value = '';
+  document.getElementById('sqleditor-results').innerHTML = '';
+  _editorState.rows = null;
+  _editorState.page = 1;
+}
+
+function onEditorKeydown(e) {
+  // Shift+Enter → run query
+  if (e.key === 'Enter' && e.shiftKey) {
+    e.preventDefault();
+    runEditorQuery();
+    return;
+  }
+  // Tab → insert 2 spaces
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const ta = e.target;
+    const start = ta.selectionStart;
+    const end   = ta.selectionEnd;
+    ta.value = ta.value.substring(0, start) + '  ' + ta.value.substring(end);
+    ta.selectionStart = ta.selectionEnd = start + 2;
+  }
+}
+
+async function runEditorQuery() {
+  const sql = document.getElementById('sqleditor-input').value.trim();
+  if (!sql) return;
+  if (!S.dbPath) { alert('No active database connection. Please connect to a database first.'); return; }
+
+  const btn = document.getElementById('editor-run-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span>Running…</span>';
+
+  const resEl = document.getElementById('sqleditor-results');
+  resEl.innerHTML = `<div class="sqleditor-results-header" style="border:1px solid #ddeab8;border-radius:12px;padding:16px;background:#fff">
+    <span style="color:#aaa;font-size:13px">Running query…</span>
+  </div>`;
+
+  const t0 = performance.now();
+  try {
+    const data = await apiFetch('/api/run-query', {
+      method: 'POST',
+      body: JSON.stringify({question: '', sql, db_path: S.dbPath}),
+    });
+    const execTime = ((performance.now() - t0) / 1000).toFixed(3);
+
+    if (data.error && !data.df_json) {
+      resEl.innerHTML = `<div class="sqleditor-results" style="border:1px solid #fed7d7;border-radius:12px;overflow:hidden;background:#fff">
+        <div class="sqleditor-results-header" style="border-bottom:1px solid #fed7d7">
+          <div><div class="sqleditor-results-title" style="color:#e53e3e">Query Error</div></div>
+        </div>
+        <div style="padding:16px"><div class="error-msg">${escHtml(data.error)}</div></div>
+      </div>`;
+      return;
+    }
+
+    let rows = null;
+    if (data.df_json) {
+      try { rows = JSON.parse(data.df_json); } catch(_) { rows = data.df_json; }
+      if (!Array.isArray(rows)) rows = null;
+    }
+
+    _editorState.rows = rows;
+    _editorState.page = 1;
+    _editorState.execTime = data.exec_time ?? execTime;
+
+    renderEditorResults();
+  } catch(e) {
+    resEl.innerHTML = `<div class="sqleditor-results" style="border:1px solid #fed7d7;border-radius:12px;overflow:hidden;background:#fff">
+      <div style="padding:16px"><div class="error-msg">${escHtml(e.message)}</div></div>
+    </div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="display:inline;margin-right:4px"><polygon points="5 3 19 12 5 21 5 3"/></svg> Run Query';
+  }
+}
+
+function renderEditorResults() {
+  const resEl = document.getElementById('sqleditor-results');
+  const rows = _editorState.rows;
+  const page = _editorState.page;
+
+  if (!rows || !rows.length) {
+    resEl.innerHTML = `<div class="sqleditor-results" style="border:1px solid #ddeab8;border-radius:12px;overflow:hidden;background:#fff">
+      <div class="sqleditor-results-header">
+        <div><div class="sqleditor-results-title">Query Results</div><div class="sqleditor-results-meta">No rows returned · ${_editorState.execTime}s</div></div>
+      </div>
+      <div class="sqleditor-empty">Query executed successfully — no rows returned.</div>
+    </div>`;
+    return;
+  }
+
+  const totalRows = rows.length;
+  const totalPages = Math.ceil(totalRows / PAGE_SIZE);
+  const start = (page - 1) * PAGE_SIZE;
+  const end   = Math.min(start + PAGE_SIZE, totalRows);
+  const pageRows = rows.slice(start, end);
+  const cols = Object.keys(rows[0]);
+
+  const thead = `<thead><tr>${cols.map(c=>`<th>${escHtml(c)}</th>`).join('')}</tr></thead>`;
+  const tbody = `<tbody>${pageRows.map(r=>`<tr>${cols.map(c=>`<td>${escHtml(String(r[c]??''))}</td>`).join('')}</tr>`).join('')}</tbody>`;
+
+  let paginationHTML = '';
+  if (totalPages > 1) {
+    let pStart = Math.max(1, page - 2);
+    let pEnd   = Math.min(totalPages, pStart + 4);
+    if (pEnd - pStart < 4) pStart = Math.max(1, pEnd - 4);
+    let pageButtons = '';
+    for (let p = pStart; p <= pEnd; p++) {
+      pageButtons += `<button class="page-btn${p===page?' active':''}" onclick="goToEditorPage(${p})">${p}</button>`;
+    }
+    paginationHTML = `<div class="pagination">
+      <span class="pagination-info">Showing ${start+1}–${end} of ${totalRows} rows · ${_editorState.execTime}s</span>
+      <div class="pagination-controls">
+        <button class="page-btn" onclick="goToEditorPage(${page-1})" ${page<=1?'disabled':''}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        ${pageButtons}
+        <button class="page-btn" onclick="goToEditorPage(${page+1})" ${page>=totalPages?'disabled':''}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>`;
+  } else {
+    paginationHTML = `<div style="padding:8px 16px 10px;border-top:1px solid #f0f5e0;background:#fafff5">
+      <span class="pagination-info">${totalRows} row${totalRows!==1?'s':''} · ${_editorState.execTime}s</span>
+    </div>`;
+  }
+
+  resEl.innerHTML = `<div class="sqleditor-results" style="border:1px solid #ddeab8;border-radius:12px;overflow:hidden;background:#fff">
+    <div class="sqleditor-results-header">
+      <div>
+        <div class="sqleditor-results-title">Query Results</div>
+        <div class="sqleditor-results-meta">${totalRows} row${totalRows!==1?'s':''}</div>
+      </div>
+      <button class="btn-primary green" style="font-size:12px;padding:6px 14px" onclick="useInViz()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;margin-right:4px"><rect x="3" y="10" width="4" height="11" rx="1"/><rect x="10" y="6" width="4" height="15" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>
+        Visualize
+      </button>
+    </div>
+    <div class="results-table-wrap"><table>${thead}${tbody}</table></div>
+    ${paginationHTML}
+  </div>`;
+}
+
+function goToEditorPage(page) {
+  if (!_editorState.rows) return;
+  const totalPages = Math.ceil(_editorState.rows.length / PAGE_SIZE);
+  if (page < 1 || page > totalPages) return;
+  _editorState.page = page;
+  renderEditorResults();
+}
+
+function useInViz() {
+  if (_editorState.rows) {
+    S.dfJson = _editorState.rows;
+    S.question = document.getElementById('sqleditor-input').value.trim().slice(0, 60);
+  }
+  goToViz();
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+
+initSidebar();
+loadConnectionsPage();
+</script>
+</body>
+</html>

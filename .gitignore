@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Environment
+.env
+
+# Connections (may contain credentials)
+inquery_connections.json
+
+# Data (large files)
+bird_data/
+minidev/
+*.zip
+*.sqlite
+
+# OS
+.DS_Store
+.idea/
+.vscode/
+
+# Evaluation outputs
+scripts/predict_dev.json

@@ -1,0 +1,162 @@
+[
+  {
+    "question_id": 455,
+    "db_id": "card_games",
+    "question": "Which of the cards that are a promotional painting have multiple faces on the same card? Please list their names.",
+    "evidence": "are a promotional painting refers to isPromo = 1; have multiple faces on the same card refers to side is not Null",
+    "SQL": "SELECT DISTINCT name FROM cards WHERE isPromo = 1 AND side IS NOT NULL",
+    "difficulty": "simple"
+  },
+  {
+    "question_id": 925,
+    "db_id": "formula_1",
+    "question": "Please give the link of the website that shows more information about the circuits the Spanish Grand Prix used in 2009.",
+    "evidence": "link of the website refers to url",
+    "SQL": "SELECT T1.url FROM circuits AS T1 INNER JOIN races AS T2 ON T2.circuitID = T1.circuitId WHERE T2.year = 2009 AND T2.name = 'Spanish Grand Prix'",
+    "difficulty": "simple"
+  },
+  {
+    "question_id": 776,
+    "db_id": "superhero",
+    "question": "Provide the hero name and race of Charles Chandler.",
+    "evidence": "hero name refers to superhero_name; Charles Chandler is the full name of superhero;",
+    "SQL": "SELECT T1.superhero_name, T2.race FROM superhero AS T1 INNER JOIN race AS T2 ON T1.race_id = T2.id WHERE T1.full_name = 'Charles Chandler'",
+    "difficulty": "simple"
+  },
+  {
+    "question_id": 271,
+    "db_id": "toxicology",
+    "question": "Does bond id TR001_1_8 have both element of chlorine and carbon?",
+    "evidence": "chlorine refers to element = 'cl'; carbon refers to element = 'c'",
+    "SQL": "SELECT T2.bond_id, T2.atom_id2, T1.element AS flag_have_CaCl FROM atom AS T1 INNER JOIN connected AS T2 ON T2.atom_id = T1.atom_id WHERE T2.bond_id = 'TR001_1_8' AND (T1.element = 'c1' OR T1.element = 'c')",
+    "difficulty": "simple"
+  },
+  {
+    "question_id": 97,
+    "db_id": "financial",
+    "question": "List out the id number of client who choose statement of issuance after transaction are Disponent?",
+    "evidence": "'POPLATEK PO OBRATU' stands for issuance after transaction",
+    "SQL": "SELECT T2.client_id FROM account AS T1 INNER JOIN disp AS T2 ON T1.account_id = T2.account_id WHERE T1.frequency = 'POPLATEK PO OBRATU' AND T2.type = 'DISPONENT'",
+    "difficulty": "simple"
+  },
+  {
+    "question_id": 498,
+    "db_id": "card_games",
+    "question": "What's the French name of the set of cards with \"Tendo Ice Bridge\" is in?",
+    "evidence": "French refers to language = 'French'; \"Tendo Ice Bridge\" is a translated name of a card; translated name refers to translation",
+    "SQL": "SELECT T2.translation FROM cards AS T1 INNER JOIN set_translations AS T2 ON T2.setCode = T1.setCode WHERE T1.name = 'Tendo Ice Bridge' AND T2.language = 'French' AND T2.translation IS NOT NULL",
+    "difficulty": "moderate"
+  },
+  {
+    "question_id": 35,
+    "db_id": "california_schools",
+    "question": "What is the administrator's email address of the chartered school with the fewest students enrolled in grades 1 through 12?",
+    "evidence": "Charted school means `Charter School (Y/N)` = 1 in the table frpm; Students enrolled in grades 1 through 12 refers to `Enrollment (K-12)`",
+    "SQL": "SELECT T2.AdmEmail1 FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T1.`Charter School (Y/N)` = 1 ORDER BY T1.`Enrollment (K-12)` ASC LIMIT 1",
+    "difficulty": "moderate"
+  },
+  {
+    "question_id": 1028,
+    "db_id": "european_football_2",
+    "question": "In Scotland Premier League, which away team won the most during the 2010 season?",
+    "evidence": "Final result should return the Team.team_long_name; Scotland Premier League refers to League.name = 'Scotland Premier League'; away team refers to away_team_api_id; away team that won the most refers to MAX(SUBTRACT(away_team_goal, home_team_goal) > 0); 2010 season refers to season = '2009/2010'; won the most refers to MAX(COUNT(*));",
+    "SQL": "SELECT teamInfo.team_long_name FROM League AS leagueData INNER JOIN Match AS matchData ON leagueData.id = matchData.league_id INNER JOIN Team AS teamInfo ON matchData.away_team_api_id = teamInfo.team_api_id WHERE leagueData.name = 'Scotland Premier League' AND matchData.season = '2009/2010' AND matchData.away_team_goal - matchData.home_team_goal > 0 GROUP BY matchData.away_team_api_id ORDER BY COUNT(*) DESC LIMIT 1",
+    "difficulty": "challenging"
+  },
+  {
+    "question_id": 858,
+    "db_id": "formula_1",
+    "question": "Which country is the constructor which got 1 point in the race No. 24 from?",
+    "evidence": "race number refers to raceId;",
+    "SQL": "SELECT T2.nationality FROM constructorResults AS T1 INNER JOIN constructors AS T2 ON T2.constructorId = T1.constructorId WHERE T1.raceId = 24 AND T1.points = 1",
+    "difficulty": "simple"
+  },
+  {
+    "question_id": 694,
+    "db_id": "codebase_community",
+    "question": "Provide the text of the latest 10 comments to the post with the title 'Analysing wind data with R' and the display name of the user who left it.",
+    "evidence": "the latest comment refers to MAX(CreationDate);",
+    "SQL": "SELECT T3.Text, T1.DisplayName FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId INNER JOIN comments AS T3 ON T2.Id = T3.PostId WHERE T2.Title = 'Analysing wind data with R' ORDER BY T1.CreationDate DESC LIMIT 10",
+    "difficulty": "moderate"
+  },
+  {
+    "question_id": 99,
+    "db_id": "financial",
+    "question": "Among the accounts who have loan validity more than 12 months, list out the accounts that have the highest approved amount and have account opening date in 1993.",
+    "evidence": "Loan validity more than 12 months refers to duration > 12",
+    "SQL": "SELECT T1.account_id FROM loan AS T1 INNER JOIN account AS T2 ON T1.account_id = T2.account_id WHERE STRFTIME('%Y', T2.date) = '1993' AND T1.duration > 12 ORDER BY T1.amount DESC LIMIT 1",
+    "difficulty": "moderate"
+  },
+  {
+    "question_id": 1318,
+    "db_id": "student_club",
+    "question": "What is the event that has the highest attendance of the students from the Student_Club?",
+    "evidence": "event with highest attendance refers to MAX(COUNT(link_to_event))",
+    "SQL": "SELECT T1.event_name FROM event AS T1 INNER JOIN attendance AS T2 ON T1.event_id = T2.link_to_event GROUP BY T1.event_name ORDER BY COUNT(T2.link_to_event) DESC LIMIT 1",
+    "difficulty": "simple"
+  },
+  {
+    "question_id": 941,
+    "db_id": "formula_1",
+    "question": "How many points did Lewis Hamilton get in total in all the Formula_1 races he participated?",
+    "evidence": "",
+    "SQL": "SELECT SUM(T2.points) FROM drivers AS T1 INNER JOIN results AS T2 ON T1.driverId = T2.driverId WHERE T1.forename = 'Lewis' AND T1.surname = 'Hamilton'",
+    "difficulty": "simple"
+  },
+  {
+    "question_id": 598,
+    "db_id": "codebase_community",
+    "question": "What is the percentage difference of student badges given during 2010 and 2011?",
+    "evidence": "student badges refers to badge's name = 'Student'; during 2010 refers to Year(Date) = 2010; during 2011 refers to Year(Date) = 2011; percentage difference = Subtract (Divide(Count(Name where Year(Date) = 2010), Count (Name)) *100, Divide(Count(Name where Year(Date) = 2011), Count(Name)) * 100)",
+    "SQL": "SELECT CAST(SUM(IIF(STRFTIME('%Y', Date) = '2010', 1, 0)) AS REAL) * 100 / COUNT(Id) - CAST(SUM(IIF(STRFTIME('%Y', Date) = '2011', 1, 0)) AS REAL) * 100 / COUNT(Id) FROM badges WHERE Name = 'Student'",
+    "difficulty": "challenging"
+  },
+  {
+    "question_id": 1255,
+    "db_id": "thrombosis_prediction",
+    "question": "For the patients with an abnormal Ig M level, what is the most common disease they are diagnosed with?",
+    "evidence": "abnormal Ig M level refers to IGM <=40 OR IGM >= 400; most common disease refers to MAX(COUNT(Diagnosis));",
+    "SQL": "SELECT T1.Diagnosis FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.IGM NOT BETWEEN 40 AND 400 GROUP BY T1.Diagnosis ORDER BY COUNT(T1.Diagnosis) DESC LIMIT 1",
+    "difficulty": "moderate"
+  },
+  {
+    "question_id": 235,
+    "db_id": "toxicology",
+    "question": "How many molecules are carcinogenic and have the bromine element?",
+    "evidence": "label = '+' mean molecules are carcinogenic; have bromine element refers to element = 'br'",
+    "SQL": "SELECT COUNT(DISTINCT T2.molecule_id) FROM atom AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE T2.label = '+' AND T1.element = 'br'",
+    "difficulty": "simple"
+  },
+  {
+    "question_id": 391,
+    "db_id": "card_games",
+    "question": "Among the Artifact cards, which are black color and comes with foreign languague translation?",
+    "evidence": "Artifact card refers to originalType = 'Artifact'; black color refers to colors = 'B'; foreign language refers to language in foreign_data",
+    "SQL": "SELECT DISTINCT T1.name FROM cards AS T1 INNER JOIN foreign_data AS T2 ON T1.uuid = T2.uuid WHERE T1.originalType = 'Artifact' AND T1.colors = 'B'",
+    "difficulty": "moderate"
+  },
+  {
+    "question_id": 466,
+    "db_id": "card_games",
+    "question": "Among the cards in the set \"Hauptset Zehnte Edition\", how many of them are designed by Adam Rex?",
+    "evidence": "card set \"Hauptset Zehnte Edition\" refers to translation = 'Hauptset Zehnte Edition'; designed by Adam refers to artist = 'Adam Rex'",
+    "SQL": "SELECT COUNT(T1.id) FROM cards AS T1 INNER JOIN set_translations AS T2 ON T2.setCode = T1.setCode WHERE T2.translation = 'Hauptset Zehnte Edition' AND T1.artist = 'Adam Rex'",
+    "difficulty": "moderate"
+  },
+  {
+    "question_id": 1149,
+    "db_id": "thrombosis_prediction",
+    "question": "Are there more in-patient or outpatient who were male? What is the deviation in percentage?",
+    "evidence": "male refers to SEX = 'M'; in-patient refers to Admission = '+'; outpatient refers to Admission = '-'; percentage = DIVIDE(COUNT(ID) where SEX = 'M' and Admission = '+', COUNT(ID) where SEX  = 'M' and Admission = '-')",
+    "SQL": "SELECT CAST(SUM(CASE WHEN Admission = '+' THEN 1 ELSE 0 END) AS REAL) * 100 / SUM(CASE WHEN Admission = '-' THEN 1 ELSE 0 END) FROM Patient WHERE SEX = 'M'",
+    "difficulty": "moderate"
+  },
+  {
+    "question_id": 1275,
+    "db_id": "thrombosis_prediction",
+    "question": "Among the patients who has a normal level of anti-centromere and a normal level of anti-SSB, how many of them are male?",
+    "evidence": "normal level of anti-centromere refers to CENTROMEA IN('-', '+-'); normal level of anti-SSB refers to SSB IN('-', '+-'); male refers to Sex = 'M'; Should consider DISTINCT in the final result;",
+    "SQL": "SELECT COUNT(DISTINCT T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.CENTROMEA IN ('negative', '0') AND T2.SSB IN ('negative', '0') AND T1.SEX = 'M'",
+    "difficulty": "moderate"
+  }
+]
