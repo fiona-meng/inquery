@@ -570,7 +570,7 @@ tr:hover td{background:#fafff5}
 </div><!-- /app -->
 
 <script>
-const API = 'http://localhost:8000';
+const API = window.location.hostname === 'localhost' ? 'http://localhost:8000' : '';
 const GREENS = ['#A2DD2C','#8AEAB4','#c6f135','#3B6D11','#ddf76a','#6ec200','#b8f096','#4a9400'];
 const PAGE_SIZE = 10;
 
@@ -1146,11 +1146,17 @@ async function submitQuery() {
 
   appendChatTurn(turn);
 
+  // Build conversation history from last 3 completed turns
+  const history = S.chatTurns
+    .filter(t => t.sql && t.answer)
+    .slice(-3)
+    .map(t => ({question: t.question, sql: t.sql, answer: t.answer}));
+
   // Step 1: generate SQL
   try {
     const sqlData = await apiFetch('/api/generate-sql', {
       method: 'POST',
-      body: JSON.stringify({question, db_path: S.dbPath}),
+      body: JSON.stringify({question, db_path: S.dbPath, history}),
     });
     if (sqlData.error) {
       updateTurnError(turnId, sqlData.error);

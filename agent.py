@@ -15,6 +15,7 @@ from chart_agent import run_chart_agent
 from db import run_query
 from schema_loader import filter_schema_by_tables
 from utils import parse_json, fix_sqlite_backticks
+from prompts import build_history_block
 
 load_dotenv(override=True)
 
@@ -37,6 +38,7 @@ class State(TypedDict):
     schema:          Optional[str]   # Full schema string (loaded once per DB)
     filtered_schema: Optional[str]   # Schema pruned to relevant tables for this question
     evidence:        Optional[str]   # BIRD evidence field (domain knowledge hint)
+    history:         Optional[list]  # Recent conversation turns [{question, sql, answer}]
 
 
 # ── Nodes ─────────────────────────────────────────────────────────────────────
@@ -100,12 +102,18 @@ def generate_sql(state: State) -> dict:
         schema = state.get("filtered_schema") or state.get("schema") or ""
         evidence = state.get("evidence") or ""
         evidence_block = f"\n== EVIDENCE ==\n{evidence}" if evidence else ""
+        history_block = build_history_block(state.get("history") or [])
+
+        db_path = state.get("db_path") or ""
+        dialect = "postgresql" if db_path.startswith("postgresql://") else \
+                  "mysql"      if db_path.startswith("mysql://")      else "sqlite"
 
         response = llm.invoke(
-            f"""{prompts.build_sql_rules("sqlite")}
+            f"""{prompts.build_sql_rules(dialect)}
 == SCHEMA ==
 {schema}
-== QUESTION ==
+{history_block}
+== CURRENT QUESTION ==
 {state['question']}{evidence_block}
 """
         )
@@ -281,6 +289,7 @@ def initial_state(
     db_path: Optional[str] = None,
     db_id: Optional[str] = None,
     evidence: Optional[str] = None,
+    history: Optional[list] = None,
 ) -> dict:
     return {
         "question":        question,
@@ -297,4 +306,5 @@ def initial_state(
         "schema":          schema,
         "filtered_schema": None,
         "evidence":        evidence,
+        "history":         history or [],
     }

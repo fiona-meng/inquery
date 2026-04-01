@@ -139,6 +139,22 @@ No explanation, no markdown, no extra fields.
 
 
 
+def build_history_block(history: list) -> str:
+    """Format conversation history for the SQL generation prompt."""
+    if not history:
+        return ""
+    lines = ["== CONVERSATION HISTORY (use this to understand follow-up questions) =="]
+    for i, turn in enumerate(history, 1):
+        lines.append(f"[Turn {i}]")
+        lines.append(f"User: {turn.get('question', '')}")
+        if turn.get('sql'):
+            lines.append(f"SQL: {turn.get('sql', '')}")
+        if turn.get('answer'):
+            lines.append(f"Result: {turn.get('answer', '')}")
+        lines.append("")
+    return "\n".join(lines)
+
+
 def build_interpret_prompt(question: str, data_sample: list) -> str:
     import json
     return f"""You are a data analyst. Answer the user's question clearly and concisely based on the query results.

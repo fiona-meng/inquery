@@ -257,6 +257,7 @@ def test_connection(body: TestConnectionBody):
 class GenerateSQLBody(BaseModel):
     question: str
     db_path: str
+    history: Optional[list] = None
 
 @app.post("/api/generate-sql")
 def generate_sql_endpoint(body: GenerateSQLBody):
@@ -265,7 +266,7 @@ def generate_sql_endpoint(body: GenerateSQLBody):
             _schema_cache[body.db_path] = load_schema(body.db_path)
         schema = _schema_cache[body.db_path]
 
-        state = initial_state(question=body.question, schema=schema, db_path=body.db_path)
+        state = initial_state(question=body.question, schema=schema, db_path=body.db_path, history=body.history)
         state["is_data_query"] = True
         state.update(_schema_filter(state))
         state.update(_gen_sql(state))
